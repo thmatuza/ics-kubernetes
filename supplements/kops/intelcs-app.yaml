@@ -1,0 +1,62 @@
+fullnameOverride: intelcs-app
+
+basicapp:
+  image:
+    tag: "latest"
+    pullPolicy: Always
+  env:
+    SERVICE_ID: "_Service_ID_"
+    SERVICE_KEY: "_Service_KEY_"
+    NUVE_HOST: "intelcs-nuve"
+    TURN_HOST: "turn.example.com"
+    TURN_PORT: "3478"
+    TURN_USERNAME: "intelcs"
+    TURN_PASSWORD: "intelcspw"
+
+  resources:
+    requests:
+      memory: "512Mi"
+    limits:
+      memory: "1G"
+
+ingress:
+  public:
+    enabled: true
+    annotations:
+      kubernetes.io/ingress.class: nginx
+      kubernetes.io/tls-acme: "true"
+    tls:
+     - hosts:
+       - basicapp.example.com
+    rules:
+      - host: basicapp.example.com
+        paths:
+          - /
+
+hpa:
+  minReplicas: 1
+  maxReplicas: 1
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      targetAverageUtilization: 40
+
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kops.k8s.io/instancegroup
+          operator: In
+          values:
+          - intelcs
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+    - labelSelector:
+        matchExpressions:
+        - key: release
+          operator: In
+          values:
+          - basicapp
+      topologyKey: "kubernetes.io/hostname"

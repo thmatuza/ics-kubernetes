@@ -1,7 +1,7 @@
 version: '3.2'
 services:
   base:
-    image: intelcsbase
+    image: intelcs
     build: .
   mongo:
     image: mongo:2.4.10
@@ -10,27 +10,28 @@ services:
   rabbit:
     image: rabbitmq
   nuve:
-    image: intelcsbase
+    image: intelcs
     environment:
       - INSTANCE_TYPE=nuve
-      - LOGLEVEL=DEBUG
+      #- LOGLEVEL=DEBUG
+      - INIT_NUVE=true
     ports:
       - "3000:3000"
     depends_on:
       - mongo
       - rabbit
   cluster_manager:
-    image: intelcsbase
+    image: intelcs
     environment:
       - INSTANCE_TYPE=cluster_manager
-      - LOGLEVEL=DEBUG
+      #- LOGLEVEL=DEBUG
     depends_on:
       - nuve
   portal:
-    image: intelcsbase
+    image: intelcs
     environment:
       - INSTANCE_TYPE=portal
-      - LOGLEVEL=DEBUG
+      #- LOGLEVEL=DEBUG
     ports:
       - "8080:8080"
     expose:
@@ -38,46 +39,46 @@ services:
     depends_on:
       - cluster_manager
   audio:
-    image: intelcsbase
+    image: intelcs
     environment:
       - INSTANCE_TYPE=audio
-      - LOGLEVEL=DEBUG
+      #- LOGLEVEL=DEBUG
     depends_on:
       - portal
   video:
-    image: intelcsbase
+    image: intelcs
     environment:
       - INSTANCE_TYPE=video
-      - LOGLEVEL=DEBUG
+      #- LOGLEVEL=DEBUG
     depends_on:
       - portal
   conference:
-    image: intelcsbase
+    image: intelcs
     environment:
       - INSTANCE_TYPE=conference
-      - LOGLEVEL=DEBUG
+      #- LOGLEVEL=DEBUG
     depends_on:
       - portal
   webrtc:
-    image: intelcsbase
+    image: intelcs
     environment:
       - INSTANCE_TYPE=webrtc
       - MINPORT=49152
       - MAXPORT=49163
-      - LOGLEVEL=DEBUG
+      #- LOGLEVEL=DEBUG
     ports:
       - "49152-49163:49152-49163/udp"
     depends_on:
       - portal
   streaming:
-    image: intelcsbase
+    image: intelcs
     environment:
       - INSTANCE_TYPE=streaming
-      - LOGLEVEL=DEBUG
+      #- LOGLEVEL=DEBUG
     depends_on:
       - portal
   app:
-    image: intelcsbase
+    image: intelcs
     environment:
       - INSTANCE_TYPE=app
     env_file:

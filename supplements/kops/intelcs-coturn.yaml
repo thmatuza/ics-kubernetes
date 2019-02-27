@@ -1,0 +1,41 @@
+coturn:
+  image:
+    tag: "latest"
+    pullPolicy: Always
+  # env:
+    # TURN_USERNAME: intelcs
+    # TURN_PASSWORD: intelcspw
+    # TURN_PORT: "3478"
+    # TURN_PORT_START: "49152"
+    # TURN_PORT_END: "65535"
+    # TURN_EXTRA: ""
+
+service:
+  type: NodePort
+
+resources:
+  limits:
+    cpu: 2
+    memory: 100Gi
+  requests:
+    cpu: 0.5
+    memory: 1Gi
+
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kops.k8s.io/instancegroup
+          operator: In
+          values:
+          - coturn
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+    - labelSelector:
+        matchExpressions:
+        - key: release
+          operator: In
+          values:
+          - coturn
+      topologyKey: "kubernetes.io/hostname"

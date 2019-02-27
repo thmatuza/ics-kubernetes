@@ -24,11 +24,6 @@ nuve:
   
   resources: {}
 
-podAnnotations:
-  prometheus.io/scrape: "true"
-  prometheus.io/port: "9901"
-  prometheus.io/path: "/prometheus"
-
 service:
   type: ClusterIP
   ports:

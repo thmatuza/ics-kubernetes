@@ -1,0 +1,46 @@
+fullnameOverride: intelcs-nuve
+
+nuve:
+  image:
+    tag: "latest"
+    pullPolicy: Always
+  env:
+    #LOGLEVEL: "DEBUG"
+    INIT_NUVE: "true"
+    DB_URL: "intelcs-mongo/nuvedb"
+    RABBIT_HOST: "intelcs-rabbit"
+    PORTAL_PUBLIC_SSL: "true"
+
+  resources:
+    requests:
+      memory: "512Mi"
+    limits:
+      memory: "1G"
+
+hpa:
+  minReplicas: 1
+  maxReplicas: 1
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      targetAverageUtilization: 40
+
+affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+      - matchExpressions:
+        - key: kops.k8s.io/instancegroup
+          operator: In
+          values:
+          - intelcs
+  podAntiAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+    - labelSelector:
+        matchExpressions:
+        - key: release
+          operator: In
+          values:
+          - nuve
+      topologyKey: "kubernetes.io/hostname"
