@@ -1,0 +1,31 @@
+{{- $serviceType := .Values.service.type -}}
+apiVersion: v1
+kind: Service
+metadata:
+{{- with .Values.service.annotations }}
+  annotations:
+{{ toYaml . | indent 4 }}
+{{- end }}
+  name: {{ template "portal.fullname" . }}
+  labels:
+    app: {{ template "portal.name" . }}
+    chart: {{ template "portal.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  type: {{ $serviceType }}
+  ports:
+    {{- range .Values.service.ports }}
+    - port: {{ .port }}
+      targetPort: {{ .targetPort }}
+      protocol: {{ .protocol | default "TCP" }}
+      name: {{ .name }}
+      {{- if eq $serviceType "NodePort" }}
+      {{- with .nodePort }}
+      nodePort: {{ . }}
+      {{- end }}
+      {{- end }}
+    {{- end }}
+  selector:
+    app: {{ template "portal.name" . }}
+    release: {{ .Release.Name }}

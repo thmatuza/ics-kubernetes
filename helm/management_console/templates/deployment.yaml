@@ -1,0 +1,84 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "management_console.fullname" . }}
+  labels:
+    app: {{ template "management_console.name" . }}
+    chart: {{ template "management_console.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ template "management_console.name" . }}
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+{{- with .Values.podAnnotations }}
+      annotations:
+{{ toYaml . | indent 8 }}
+{{- end }}
+      labels:
+        app: {{ template "management_console.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: envoy
+          image: "{{ .Values.envoy.image.repository }}:{{ .Values.envoy.image.tag }}"
+          imagePullPolicy: {{ .Values.envoy.image.pullPolicy }}
+          command:
+            - "/usr/local/bin/envoy"
+          args:
+            - "--config-path /etc/envoy/envoy.yaml"
+            - "--service-cluster ingress"
+          ports:
+            - name: http-public
+              containerPort: {{ .Values.envoy.containerPort.http.public }}
+            - name: admin
+              containerPort: {{ .Values.envoy.containerPort.admin }}
+          volumeMounts:
+            - name: {{ template "management_console.fullname" . }}-envoy
+              mountPath: /etc/envoy
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.management_console.image.repository }}:{{ .Values.management_console.image.tag }}"
+          imagePullPolicy: {{ .Values.management_console.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.management_console.containerPort.http.public }}
+              protocol: TCP
+          env:
+            {{- range $key, $val := .Values.management_console.env }}
+            - name: {{ $key }}
+              value: {{ $val | quote }}
+            {{- end }}
+          {{- if gt .Values.management_console.initialDelaySeconds 0.0 }}
+          livenessProbe:
+            httpGet:
+              path: /console/
+              port: http
+            initialDelaySeconds: {{ .Values.management_console.initialDelaySeconds }}
+          readinessProbe:
+            httpGet:
+              path: /console/
+              port: http
+            initialDelaySeconds: {{ .Values.management_console.initialDelaySeconds }}
+          {{- end }}
+          resources:
+{{ toYaml .Values.management_console.resources | indent 12 }}
+      volumes:
+        - name: {{ template "management_console.fullname" . }}-envoy
+          configMap:
+            name: {{ template "management_console.fullname" . }}-envoy
+    {{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+    {{- end }}

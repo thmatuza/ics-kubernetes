@@ -1,0 +1,75 @@
+replicaCount: 1
+
+envoy:
+  image:
+    repository: envoyproxy/envoy-alpine
+    tag: v1.7.0
+    pullPolicy: IfNotPresent
+  containerPort:
+    http:
+      public: 49155
+    admin: 49156
+
+nuve:
+  image:
+    repository: intelcs
+    tag: latest
+    pullPolicy: IfNotPresent
+  containerPort:
+    http:
+      public: 3000
+  initialDelaySeconds: 30
+  env:
+    INSTANCE_TYPE: nuve
+  
+  resources: {}
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "9901"
+  prometheus.io/path: "/prometheus"
+
+service:
+  type: ClusterIP
+  ports:
+    - name: http-public
+      port: 3000
+      targetPort: http-public
+      nodePort: 32600
+
+ingress:
+  enabled: false
+  public:
+    annotations: {}
+      # kubernetes.io/ingress.class: nginx
+      # kubernetes.io/tls-acme: "true"
+    path: /
+    hosts:
+      - chart-example.local
+    tls: []
+    #  - secretName: chart-example-tls
+    #    hosts:
+    #      - chart-example.local
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #  cpu: 100m
+  #  memory: 128Mi
+  # requests:
+  #  cpu: 100m
+  #  memory: 128Mi
+
+
+hpa:
+  minReplicas: 1
+  maxReplicas: 3
+  metrics: []
+  # metrics:
+  # - type: Resource
+  #   resource:
+  #     name: cpu
+  #     targetAverageUtilization: 40

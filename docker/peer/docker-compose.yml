@@ -1,0 +1,8 @@
+version: '3.2'
+services:
+  base:
+    image: intelcspeer
+    build: .
+    ports:
+      - "8095:8095"
+      - "8096:8096"  

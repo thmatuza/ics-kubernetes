@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "coturn.fullname" . }}
+  labels:
+    app: {{ template "coturn.name" . }}
+    chart: {{ template "coturn.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ template "coturn.name" . }}
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+{{- with .Values.podAnnotations }}
+      annotations:
+{{ toYaml . | indent 8 }}
+{{- end }}
+      labels:
+        app: {{ template "coturn.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      hostNetwork: true
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.coturn.image.repository }}:{{ .Values.coturn.image.tag }}"
+          imagePullPolicy: {{ .Values.coturn.image.pullPolicy }}
+          ports:
+            - name: turntcp
+              containerPort: {{ .Values.coturn.containerPort.turnport }}
+              protocol: TCP
+            - name: turnudp
+              containerPort: {{ .Values.coturn.containerPort.turnport }}
+              protocol: UDP
+          livenessProbe:
+            tcpSocket:
+              port: turntcp
+            initialDelaySeconds: 30
+          readinessProbe:
+            tcpSocket:
+              port: turntcp
+            initialDelaySeconds: 30
+          env:
+            {{- range $key, $val := .Values.coturn.env }}
+            - name: {{ $key }}
+              value: {{ $val | quote }}
+            {{- end }}
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+    {{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+    {{- end }}

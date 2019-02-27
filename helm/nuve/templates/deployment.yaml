@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "nuve.fullname" . }}
+  labels:
+    app: {{ template "nuve.name" . }}
+    chart: {{ template "nuve.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ template "nuve.name" . }}
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+{{- with .Values.podAnnotations }}
+      annotations:
+{{ toYaml . | indent 8 }}
+{{- end }}
+      labels:
+        app: {{ template "nuve.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: envoy
+          image: "{{ .Values.envoy.image.repository }}:{{ .Values.envoy.image.tag }}"
+          imagePullPolicy: {{ .Values.envoy.image.pullPolicy }}
+          command:
+            - "/usr/local/bin/envoy"
+          args:
+            - "--config-path /etc/envoy/envoy.yaml"
+            - "--service-cluster ingress"
+          ports:
+            - name: http-public
+              containerPort: {{ .Values.envoy.containerPort.http.public }}
+            - name: admin
+              containerPort: {{ .Values.envoy.containerPort.admin }}
+          volumeMounts:
+            - name: {{ template "nuve.fullname" . }}-envoy
+              mountPath: /etc/envoy
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.nuve.image.repository }}:{{ .Values.nuve.image.tag }}"
+          imagePullPolicy: {{ .Values.nuve.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.nuve.containerPort.http.public }}
+              protocol: TCP
+          env:
+            {{- range $key, $val := .Values.nuve.env }}
+            - name: {{ $key }}
+              value: {{ $val | quote }}
+            {{- end }}
+          {{- if gt .Values.nuve.initialDelaySeconds 0.0 }}
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: {{ .Values.nuve.initialDelaySeconds }}
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: {{ .Values.nuve.initialDelaySeconds }}
+          {{- end }}
+          resources:
+{{ toYaml .Values.nuve.resources | indent 12 }}
+      volumes:
+        - name: {{ template "nuve.fullname" . }}-envoy
+          configMap:
+            name: {{ template "nuve.fullname" . }}-envoy
+    {{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+    {{- end }}

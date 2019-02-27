@@ -1,0 +1,20 @@
+apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ template "management_console.fullname" . }}
+  labels:
+    app: {{ template "management_console.name" . }}
+    chart: {{ template "management_console.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ template "management_console.fullname" . }}
+  minReplicas: {{ .Values.hpa.minReplicas }}
+  maxReplicas: {{ .Values.hpa.maxReplicas }}
+  {{- with .Values.hpa.metrics }}
+  metrics:
+{{ toYaml . | indent 4 }}
+  {{- end }}

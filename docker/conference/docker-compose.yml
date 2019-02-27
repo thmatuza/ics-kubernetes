@@ -1,0 +1,90 @@
+version: '3.2'
+services:
+  base:
+    image: intelcsbase
+    build: .
+  mongo:
+    image: mongo:2.4.10
+    volumes:
+      - ./mongodb:/data/db
+  rabbit:
+    image: rabbitmq
+  nuve:
+    image: intelcsbase
+    environment:
+      - INSTANCE_TYPE=nuve
+      - LOGLEVEL=DEBUG
+    ports:
+      - "3000:3000"
+    depends_on:
+      - mongo
+      - rabbit
+  cluster_manager:
+    image: intelcsbase
+    environment:
+      - INSTANCE_TYPE=cluster_manager
+      - LOGLEVEL=DEBUG
+    depends_on:
+      - nuve
+  portal:
+    image: intelcsbase
+    environment:
+      - INSTANCE_TYPE=portal
+      - LOGLEVEL=DEBUG
+    ports:
+      - "8080:8080"
+    expose:
+      - "8080"
+    depends_on:
+      - cluster_manager
+  audio:
+    image: intelcsbase
+    environment:
+      - INSTANCE_TYPE=audio
+      - LOGLEVEL=DEBUG
+    depends_on:
+      - portal
+  video:
+    image: intelcsbase
+    environment:
+      - INSTANCE_TYPE=video
+      - LOGLEVEL=DEBUG
+    depends_on:
+      - portal
+  conference:
+    image: intelcsbase
+    environment:
+      - INSTANCE_TYPE=conference
+      - LOGLEVEL=DEBUG
+    depends_on:
+      - portal
+  webrtc:
+    image: intelcsbase
+    environment:
+      - INSTANCE_TYPE=webrtc
+      - MINPORT=49152
+      - MAXPORT=49163
+      - LOGLEVEL=DEBUG
+    ports:
+      - "49152-49163:49152-49163/udp"
+    depends_on:
+      - portal
+  streaming:
+    image: intelcsbase
+    environment:
+      - INSTANCE_TYPE=streaming
+      - LOGLEVEL=DEBUG
+    depends_on:
+      - portal
+  app:
+    image: intelcsbase
+    environment:
+      - INSTANCE_TYPE=app
+    env_file:
+      - ./app.env
+    ports:
+      - "3001:3001"
+      - "3004:3004"
+    depends_on:
+      - nuve
+  

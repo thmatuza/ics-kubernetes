@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "portal.fullname" . }}
+  labels:
+    app: {{ template "portal.name" . }}
+    chart: {{ template "portal.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ template "portal.name" . }}
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+{{- with .Values.podAnnotations }}
+      annotations:
+{{ toYaml . | indent 8 }}
+{{- end }}
+      labels:
+        app: {{ template "portal.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: envoy
+          image: "{{ .Values.envoy.image.repository }}:{{ .Values.envoy.image.tag }}"
+          imagePullPolicy: {{ .Values.envoy.image.pullPolicy }}
+          command:
+            - "/usr/local/bin/envoy"
+          args:
+            - "--config-path /etc/envoy/envoy.yaml"
+            - "--service-cluster ingress"
+          ports:
+            - name: http-public
+              containerPort: {{ .Values.envoy.containerPort.http.public }}
+            - name: admin
+              containerPort: {{ .Values.envoy.containerPort.admin }}
+          volumeMounts:
+            - name: {{ template "portal.fullname" . }}-envoy
+              mountPath: /etc/envoy
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.portal.image.repository }}:{{ .Values.portal.image.tag }}"
+          imagePullPolicy: {{ .Values.portal.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.portal.containerPort.http.public }}
+              protocol: TCP
+          env:
+            {{- range $key, $val := .Values.portal.env }}
+            - name: {{ $key }}
+              value: {{ $val | quote }}
+            {{- end }}
+          {{- if gt .Values.portal.initialDelaySeconds 0.0 }}
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: {{ .Values.portal.initialDelaySeconds }}
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: {{ .Values.portal.initialDelaySeconds }}
+          {{- end }}
+          resources:
+{{ toYaml .Values.portal.resources | indent 12 }}
+      volumes:
+        - name: {{ template "portal.fullname" . }}-envoy
+          configMap:
+            name: {{ template "portal.fullname" . }}-envoy
+    {{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+    {{- end }}

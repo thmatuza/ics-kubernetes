@@ -1,0 +1,77 @@
+replicaCount: 1
+
+coturn:
+  image:
+    repository: coturn
+    tag: latest
+    pullPolicy: IfNotPresent
+  containerPort:
+    turnport: 3478
+  env:
+    TURN_USERNAME: intelcs
+    TURN_PASSWORD: intelcspw
+    TURN_PORT: "3478"
+    TURN_PORT_START: "49152"
+    TURN_PORT_END: "65535"
+    TURN_EXTRA: "--log-file=stdout --lt-cred-mech --fingerprint --realm=intel.com"
+
+service:
+  type: ClusterIP
+  ports:
+    - name: turntcp
+      port: 3478
+      targetPort: 3478
+      nodePort: 32530
+    - name: turnudp
+      protocol: UDP
+      port: 3478
+      targetPort: 3478
+      nodePort: 32540
+
+ingress:
+  enabled: false
+  public:
+    annotations: {}
+      # kubernetes.io/ingress.class: nginx
+      # kubernetes.io/tls-acme: "true"
+    path: /
+    hosts:
+      - chart-example.local
+    tls: []
+    #  - secretName: chart-example-tls
+    #    hosts:
+    #      - chart-example.local
+  internal:
+    annotations: {}
+      # kubernetes.io/ingress.class: nginx
+      # kubernetes.io/tls-acme: "true"
+    path: /
+    hosts:
+      - chart-example.local
+
+podAnnotations:
+  prometheus.io/scrape: "true"
+  prometheus.io/port: "9901"
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #  cpu: 100m
+  #  memory: 128Mi
+  # requests:
+  #  cpu: 100m
+  #  memory: 128Mi
+
+
+hpa:
+  minReplicas: 1
+  maxReplicas: 3
+  metrics: []
+  # metrics:
+  # - type: Resource
+  #   resource:
+  #     name: cpu
+  #     targetAverageUtilization: 40

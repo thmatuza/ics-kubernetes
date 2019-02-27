@@ -1,0 +1,31 @@
+{{- $serviceType := .Values.service.type -}}
+apiVersion: v1
+kind: Service
+metadata:
+{{- with .Values.service.annotations }}
+  annotations:
+{{ toYaml . | indent 4 }}
+{{- end }}
+  name: {{ template "management_console.fullname" . }}
+  labels:
+    app: {{ template "management_console.name" . }}
+    chart: {{ template "management_console.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  type: {{ $serviceType }}
+  ports:
+    {{- range .Values.service.ports }}
+    - port: {{ .port }}
+      targetPort: {{ .targetPort }}
+      protocol: {{ .protocol | default "TCP" }}
+      name: {{ .name }}
+      {{- if eq $serviceType "NodePort" }}
+      {{- with .nodePort }}
+      nodePort: {{ . }}
+      {{- end }}
+      {{- end }}
+    {{- end }}
+  selector:
+    app: {{ template "management_console.name" . }}
+    release: {{ .Release.Name }}

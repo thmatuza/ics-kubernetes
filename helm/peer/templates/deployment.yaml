@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "peer.fullname" . }}
+  labels:
+    app: {{ template "peer.name" . }}
+    chart: {{ template "peer.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ template "peer.name" . }}
+      release: {{ .Release.Name }}
+  template:
+    metadata:
+{{- with .Values.podAnnotations }}
+      annotations:
+{{ toYaml . | indent 8 }}
+{{- end }}
+      labels:
+        app: {{ template "peer.name" . }}
+        release: {{ .Release.Name }}
+    spec:
+      containers:
+        - name: envoy
+          image: "{{ .Values.envoy.image.repository }}:{{ .Values.envoy.image.tag }}"
+          imagePullPolicy: {{ .Values.envoy.image.pullPolicy }}
+          command:
+            - "/usr/local/bin/envoy"
+          args:
+            - "--config-path /etc/envoy/envoy.yaml"
+            - "--service-cluster ingress"
+          ports:
+            - name: http-public
+              containerPort: {{ .Values.envoy.containerPort.http.public }}
+            - name: admin
+              containerPort: {{ .Values.envoy.containerPort.admin }}
+          volumeMounts:
+            - name: {{ template "peer.fullname" . }}-envoy
+              mountPath: /etc/envoy
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.peer.image.repository }}:{{ .Values.peer.image.tag }}"
+          imagePullPolicy: {{ .Values.peer.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.peer.containerPort.http.public }}
+              protocol: TCP
+          env:
+            {{- range $key, $val := .Values.peer.env }}
+            - name: {{ $key }}
+              value: {{ $val | quote }}
+            {{- end }}
+          {{- if gt .Values.peer.initialDelaySeconds 0.0 }}
+          livenessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: {{ .Values.peer.initialDelaySeconds }}
+          readinessProbe:
+            tcpSocket:
+              port: http
+            initialDelaySeconds: {{ .Values.peer.initialDelaySeconds }}
+          {{- end }}
+          resources:
+{{ toYaml .Values.peer.resources | indent 12 }}
+      volumes:
+        - name: {{ template "peer.fullname" . }}-envoy
+          configMap:
+            name: {{ template "peer.fullname" . }}-envoy
+    {{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+    {{- end }}
