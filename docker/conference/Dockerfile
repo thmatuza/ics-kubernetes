@@ -3,7 +3,7 @@ FROM centos:7.4.1708
 RUN groupadd --gid 1000 node \
     && useradd --uid 1000 --gid node --shell /bin/bash --create-home node
 
-ENV NODE_VERSION 8.11.1
+ENV NODE_VERSION 8.15.0
 
 RUN ARCH=x64 \
     # gpg keys listed at https://github.com/nodejs/node#release-keys
@@ -33,7 +33,7 @@ RUN ARCH=x64 \
     && rm "node-v$NODE_VERSION-linux-$ARCH.tar.xz" SHASUMS256.txt.asc SHASUMS256.txt \
     && ln -s /usr/local/bin/node /usr/local/bin/nodejs
 
-ENV CS_VERSION 4.1
+ENV CS_VERSION 4.1.1
 
 RUN yum install -y sudo wget bzip2 make
 

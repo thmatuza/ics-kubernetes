@@ -39,6 +39,8 @@ if [ -z "$NODE_CMD" ]; then
     NODE_CMD="node"
 fi
 
+export NODE_DEBUG_ERIZO=1
+
 case $INSTANCE_TYPE in
     "nuve")
         CONFIG_FILE="./${INSTANCE_TYPE}/${INSTANCE_TYPE}.toml"
