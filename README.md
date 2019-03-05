@@ -296,5 +296,5 @@ helm install ./peer \
 To check the sample MCU application, access to following URL on your browser.
 
 ```
-https://<sample MCU application host name>:3001
+https://<sample MCU application host name>
 ```
